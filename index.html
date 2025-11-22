@@ -1,0 +1,1142 @@
+<!doctype html>
+<html lang="fa" dir="rtl" style="height: 100%;">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>سیستم مدیریت فروش دارو</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+  <style>
+    body {
+      box-sizing: border-box;
+      font-family: 'Vazirmatn', sans-serif;
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-size: 14px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    .gradient-bg {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .input-focus:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    .fade-in {
+      animation: fadeIn 0.3s ease-in;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 10px;
+      font-weight: 600;
+    }
+    .badge-prescribed { background: #10b981; color: white; }
+    .badge-rejected { background: #ef4444; color: white; }
+    .badge-followup { background: #f59e0b; color: white; }
+    .section-tab {
+      padding: 8px 4px;
+      background: white;
+      border-radius: 8px 8px 0 0;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 10px;
+      transition: all 0.3s;
+      border-bottom: 3px solid transparent;
+      flex: 1;
+      text-align: center;
+      min-width: 0;
+    }
+    .section-tab.active {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-bottom-color: #4c51bf;
+    }
+    .section-tab .icon {
+      font-size: 14px;
+      display: block;
+      margin-bottom: 2px;
+    }
+    .floating-btn {
+      position: fixed;
+      bottom: 16px;
+      left: 16px;
+      z-index: 40;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+      font-size: 24px;
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+  <script src="/_sdk/element_sdk.js" type="text/javascript"></script>
+ </head>
+ <body style="height: 100%; overflow-x: hidden;">
+  <div style="min-height: 100%; display: flex; flex-direction: column; background: #f0f4f8;"><!-- Header -->
+   <header class="gradient-bg text-white shadow-xl">
+    <div class="px-4 py-3">
+     <div class="text-center mb-2">
+      <h1 class="text-lg font-bold mb-1">💊 سیستم مدیریت فروش</h1>
+      <p class="text-xs opacity-90">⚡ وحید سلیمی</p>
+     </div>
+     <div class="grid grid-cols-4 gap-1 text-xs">
+      <div class="text-center bg-white bg-opacity-20 rounded-lg px-2 py-1.5">
+       <div class="text-base font-bold" id="totalDoctors">
+        0
+       </div>
+       <div class="text-xs opacity-90">
+        پزشکان
+       </div>
+      </div>
+      <div class="text-center bg-white bg-opacity-20 rounded-lg px-2 py-1.5">
+       <div class="text-base font-bold" id="totalPharmacies">
+        0
+       </div>
+       <div class="text-xs opacity-90">
+        داروخانه
+       </div>
+      </div>
+      <div class="text-center bg-white bg-opacity-20 rounded-lg px-2 py-1.5">
+       <div class="text-base font-bold" id="totalVisits">
+        0
+       </div>
+       <div class="text-xs opacity-90">
+        ویزیت
+       </div>
+      </div>
+      <div class="text-center bg-white bg-opacity-20 rounded-lg px-2 py-1.5">
+       <div class="text-base font-bold" id="totalOrders">
+        0
+       </div>
+       <div class="text-xs opacity-90">
+        سفارش
+       </div>
+      </div>
+     </div>
+    </div>
+   </header><!-- Section Tabs -->
+   <div class="px-1 pt-2">
+    <div class="flex gap-0.5 overflow-x-auto"><button class="section-tab active" data-section="doctors"> <span class="icon">👨‍⚕️</span> <span>پزشکان</span> </button> <button class="section-tab" data-section="visits"> <span class="icon">📋</span> <span>ویزیت</span> </button> <button class="section-tab" data-section="pharmacies"> <span class="icon">🏥</span> <span>داروخانه</span> </button> <button class="section-tab" data-section="orders"> <span class="icon">📦</span> <span>سفارش</span> </button> <button class="section-tab" data-section="sales"> <span class="icon">📊</span> <span>فروش</span> </button> <button class="section-tab" data-section="reports"> <span class="icon">📄</span> <span>گزارش</span> </button>
+    </div>
+   </div><!-- Main Content -->
+   <main class="flex-1 px-2 pb-20 overflow-y-auto"><!-- Doctors Section -->
+    <div id="doctorsSection" class="bg-white rounded-b-xl rounded-tr-xl shadow-lg p-3">
+     <div class="mb-3"><input type="text" id="searchDoctorInput" placeholder="🔍 جستجو..." class="input-focus w-full px-3 py-2.5 border-2 border-gray-300 rounded-lg text-sm">
+     </div>
+     <div id="doctorsList" class="space-y-2"></div>
+     <div id="emptyDoctorsState" class="text-center py-10 hidden">
+      <div class="text-5xl mb-3">
+       👨‍⚕️
+      </div>
+      <h3 class="text-base font-bold text-gray-700 mb-2">هنوز پزشکی ثبت ��شده</h3>
+      <p class="text-gray-500 text-xs">روی دکمه + کلیک کنید</p>
+     </div>
+    </div><!-- Visits Section -->
+    <div id="visitsSection" class="bg-white rounded-b-xl rounded-tr-xl shadow-lg p-3 hidden">
+     <div class="mb-3"><input type="text" id="searchVisitInput" placeholder="🔍 جستجو..." class="input-focus w-full px-3 py-2.5 border-2 border-gray-300 rounded-lg text-sm">
+     </div>
+     <div id="visitsList" class="space-y-2"></div>
+     <div id="emptyVisitsState" class="text-center py-10 hidden">
+      <div class="text-5xl mb-3">
+       📋
+      </div>
+      <h3 class="text-base font-bold text-gray-700 mb-2">هنوز ویزیتی ثبت نشده</h3>
+      <p class="text-gray-500 text-xs">روی دکمه + کلیک کنید</p>
+     </div>
+    </div><!-- Pharmacies Section -->
+    <div id="pharmaciesSection" class="bg-white rounded-b-xl rounded-tr-xl shadow-lg p-3 hidden">
+     <div class="mb-3"><input type="text" id="searchPharmacyInput" placeholder="🔍 جستجو..." class="input-focus w-full px-3 py-2.5 border-2 border-gray-300 rounded-lg text-sm">
+     </div>
+     <div id="pharmaciesList" class="space-y-2"></div>
+     <div id="emptyPharmaciesState" class="text-center py-10 hidden">
+      <div class="text-5xl mb-3">
+       🏥
+      </div>
+      <h3 class="text-base font-bold text-gray-700 mb-2">هنوز داروخانه‌ای ثبت نشده</h3>
+      <p class="text-gray-500 text-xs">روی دکمه + کلیک کنید</p>
+     </div>
+    </div><!-- Orders Section -->
+    <div id="ordersSection" class="bg-white rounded-b-xl rounded-tr-xl shadow-lg p-3 hidden">
+     <div class="mb-3"><input type="text" id="searchOrderInput" placeholder="🔍 جستجو..." class="input-focus w-full px-3 py-2.5 border-2 border-gray-300 rounded-lg text-sm">
+     </div>
+     <div id="ordersList" class="space-y-2"></div>
+     <div id="emptyOrdersState" class="text-center py-10 hidden">
+      <div class="text-5xl mb-3">
+       📦
+      </div>
+      <h3 class="text-base font-bold text-gray-700 mb-2">هنوز سفارشی ثبت نشده</h3>
+      <p class="text-gray-500 text-xs">روی دکمه + کلیک کنید</p>
+     </div>
+    </div><!-- Sales Section -->
+    <div id="salesSection" class="bg-white rounded-b-xl rounded-tr-xl shadow-lg p-3 hidden">
+     <div class="mb-3"><button id="addSalesBtn" class="w-full gradient-bg text-white px-4 py-3 rounded-lg font-bold shadow text-sm"> ➕ ثبت آمار فروش هفتگی </button>
+     </div>
+     <div class="bg-white rounded-lg shadow p-3 mb-3">
+      <canvas id="salesChart" style="max-height: 250px;"></canvas>
+     </div>
+     <div id="salesList" class="space-y-2"></div>
+     <div id="emptySalesState" class="text-center py-10 hidden">
+      <div class="text-5xl mb-3">
+       📊
+      </div>
+      <h3 class="text-base font-bold text-gray-700 mb-2">هنوز آماری ثبت نشده</h3>
+      <p class="text-gray-500 text-xs">روی دکمه بالا کلیک کنید</p>
+     </div>
+    </div><!-- Reports Section -->
+    <div id="reportsSection" class="bg-white rounded-b-xl rounded-tr-xl shadow-lg p-3 hidden">
+     <div class="space-y-3">
+      <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-3 border-2 border-blue-200">
+       <h3 class="font-bold text-sm mb-2 text-blue-900">📄 گزارش ارائه</h3>
+       <div class="space-y-2"><select id="reportType" class="input-focus w-full px-3 py-2 border-2 border-gray-300 rounded-lg text-xs"> <option value="doctors">پزشکان</option> <option value="pharmacies">داروخانه‌ها</option> <option value="both">هر دو</option> </select> <select id="reportPeriod" class="input-focus w-full px-3 py-2 border-2 border-gray-300 rounded-lg text-xs"> <option value="weekly">هفتگی</option> <option value="monthly">ماهانه</option> <option value="custom">سفارشی</option> </select>
+        <div class="grid grid-cols-2 gap-2"><input type="date" id="reportFromDate" class="input-focus w-full px-2 py-2 border-2 border-gray-300 rounded text-xs"> <input type="date" id="reportToDate" class="input-focus w-full px-2 py-2 border-2 border-gray-300 rounded text-xs">
+        </div><button id="generatePDFBtn" class="w-full bg-red-600 text-white px-4 py-2.5 rounded-lg font-bold text-xs shadow"> 📑 تولید PDF </button>
+       </div>
+      </div>
+     </div>
+    </div><!-- Floating Button --> <button id="floatingBtn" class="floating-btn gradient-bg text-white">➕</button>
+   </main><!-- Footer -->
+   <footer class="bg-white border-t border-gray-200 py-2 text-center">
+    <p class="text-xs font-semibold text-gray-600">© 2024 | <span class="text-indigo-600">⭐ وحید سلیمی</span></p>
+   </footer>
+  </div><!-- Doctor Modal -->
+  <div id="doctorModal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-end z-50" style="display: none;">
+   <div class="bg-white w-full h-full overflow-y-auto fade-in">
+    <div class="gradient-bg text-white p-4 sticky top-0 z-10 flex items-center justify-between">
+     <h2 id="doctorModalTitle" class="text-base font-bold">➕ ثبت پزشک</h2><button id="closeDoctorModal" class="text-xl">✖️</button>
+    </div>
+    <form id="doctorForm" class="p-4 space-y-3">
+     <div><label class="block text-gray-700 font-semibold mb-1.5 text-xs">نام و نام خانوادگی *</label> <input type="text" id="doctorNameInput" required class="input-focus w-full px-3 py-2.5 border-2 border-gray-300 rounded-lg text-sm">
+     </div>
+     <div><label class="block text-gray-700 font-semibold mb-1.5 text-xs">تخصص *</label> <input type="text" id="specialtyInput" required class="input-focus w-full px-3 py-2.5 border-2 border-gray-300 rounded-lg text-sm">
+     </div>
+     <div><label class="block text-gray-700 font-semibold mb-1.5 text-xs">شماره تماس *</label> <input type="tel" id="phoneInput" required class="input-focus w-full px-3 py-2.5 border-2 border-gray-300 rounded-lg text-sm">
+     </div>
+     <div><label class="block text-gray-700 font-semibold mb-1.5 text-xs">منطق�� *</label> <input type="text" id="areaInput" required class="input-focus w-full px-3 py-2.5 border-2 border-gray-300 rounded-lg text-sm">
+     </div>
+     <div><label class="block text-gray-700 font-semibold mb-1.5 text-xs">آدرس</label> <input type="text" id="addressInput" class="input-focus w-full px-3 py-2.5 border-2 border-gray-300 rounded-lg text-sm">
+     </div>
+     <div class="flex gap-2 pt-4"><button type="submit" class="flex-1 gradient-bg text-white px-4 py-3 rounded-lg font-bold shadow-lg text-sm">💾 ذخیره</button> <button type="button" id="cancelDoctorBtn" class="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg font-bold text-sm">✖️</button>
+     </div>
+    </form>
+   </div>
+  </div><!-- Visit Modal -->
+  <div id="visitModal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-end z-50" style="display: none;">
+   <div class="bg-white w-full h-full overflow-y-auto fade-in">
+    <div class="gradient-bg text-white p-4 sticky top-0 z-10 flex items-center justify-between">
+     <h2 id="visitModalTitle" class="text-base font-bold">➕ ثبت ویزیت</h2><button id="closeVisitModal" class="text-xl">✖️</button>
+    </div>
+    <form id="visitForm" class="p-4 space-y-3">
+     <div><label class="block text-gray-700 font-semibold mb-1.5 text-xs">انتخاب پزشک *</label> <select id="doctorSelect" required class="input-focus w-full px-3 py-2.5 border-2 border-gray-300 rounded-lg text-sm"> <option value="">انتخاب کنید...</option> </select>
+     </div>
+     <div class="grid grid-cols-2 gap-2">
+      <div><label class="block text-gray-700 font-semibold mb-1.5 text-xs">تاریخ *</label> <input type="date" id="visitDate" required class="input-focus w-full px-3 py-2.5 border-2 border-gray-300 rounded-lg text-sm">
+      </div>
+      <div><label class="block text-gray-700 font-semibold mb-1.5 text-xs">ساعت *</label> <input type="time" id="visitTime" required class="input-focus w-full px-3 py-2.5 border-2 border-gray-300 rounded-lg text-sm">
+      </div>
+     </div>
+     <div><label class="block text-gray-700 font-semibold mb-1.5 text-xs">نتیجه *</label> <select id="visitResult" required class="input-focus w-full px-3 py-2.5 border-2 border-gray-300 rounded-lg text-sm"> <option value="">انتخاب کنید...</option> <option value="prescribed">سفارش شده</option> <option value="rejected">رد شده</option> <option value="followup">ویزیت مجدد</option> </select>
+     </div>
+     <div><label class="block text-gray-700 font-semibold mb-1.5 text-xs">یادداشت</label> <textarea id="visitNotes" rows="2" class="input-focus w-full px-3 py-2.5 border-2 border-gray-300 rounded-lg text-sm"></textarea>
+     </div>
+     <div class="flex gap-2 pt-4"><button type="submit" class="flex-1 gradient-bg text-white px-4 py-3 rounded-lg font-bold shadow-lg text-sm">💾 ذخیره</button> <button type="button" id="cancelVisitBtn" class="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg font-bold text-sm">✖️</button>
+     </div>
+    </form>
+   </div>
+  </div><!-- Pharmacy Modal -->
+  <div id="pharmacyModal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-end z-50" style="display: none;">
+   <div class="bg-white w-full h-full overflow-y-auto fade-in">
+    <div class="gradient-bg text-white p-4 sticky top-0 z-10 flex items-center justify-between">
+     <h2 id="pharmacyModalTitle" class="text-base font-bold">➕ ثبت داروخانه</h2><button id="closePharmacyModal" class="text-xl">✖️</button>
+    </div>
+    <form id="pharmacyForm" class="p-4 space-y-3">
+     <div><label class="block text-gray-700 font-semibold mb-1.5 text-xs">نام داروخانه *</label> <input type="text" id="pharmacyNameInput" required class="input-focus w-full px-3 py-2.5 border-2 border-gray-300 rounded-lg text-sm">
+     </div>
+     <div><label class="block text-gray-700 font-semibold mb-1.5 text-xs">نام داروساز *</label> <input type="text" id="pharmacistNameInput" required class="input-focus w-full px-3 py-2.5 border-2 border-gray-300 rounded-lg text-sm">
+     </div>
+     <div><label class="block text-gray-700 font-semibold mb-1.5 text-xs">شماره تماس *</label> <input type="tel" id="pharmacyPhoneInput" required class="input-focus w-full px-3 py-2.5 border-2 border-gray-300 rounded-lg text-sm">
+     </div>
+     <div><label class="block text-gray-700 font-semibold mb-1.5 text-xs">آدرس *</label> <textarea id="pharmacyAddressInput" required rows="2" class="input-focus w-full px-3 py-2.5 border-2 border-gray-300 rounded-lg text-sm"></textarea>
+     </div>
+     <div class="flex gap-2 pt-4"><button type="submit" class="flex-1 gradient-bg text-white px-4 py-3 rounded-lg font-bold shadow-lg text-sm">💾 ذخیره</button> <button type="button" id="cancelPharmacyBtn" class="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg font-bold text-sm">✖️</button>
+     </div>
+    </form>
+   </div>
+  </div><!-- Order Modal -->
+  <div id="orderModal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-end z-50" style="display: none;">
+   <div class="bg-white w-full h-full overflow-y-auto fade-in">
+    <div class="gradient-bg text-white p-4 sticky top-0 z-10 flex items-center justify-between">
+     <h2 id="orderModalTitle" class="text-base font-bold">➕ ثبت سفارش</h2><button id="closeOrderModal" class="text-xl">✖️</button>
+    </div>
+    <form id="orderForm" class="p-4 space-y-3">
+     <div><label class="block text-gray-700 font-semibold mb-1.5 text-xs">انتخاب داروخانه *</label> <select id="pharmacySelect" required class="input-focus w-full px-3 py-2.5 border-2 border-gray-300 rounded-lg text-sm"> <option value="">انتخاب کنید...</option> </select>
+     </div>
+     <div><label class="block text-gray-700 font-semibold mb-1.5 text-xs">تاریخ سفارش *</label> <input type="date" id="orderDate" required class="input-focus w-full px-3 py-2.5 border-2 border-gray-300 rounded-lg text-sm">
+     </div>
+     <div><label class="block text-gray-700 font-semibold mb-1.5 text-xs">نام دارو *</label> <input type="text" id="drugName" required class="input-focus w-full px-3 py-2.5 border-2 border-gray-300 rounded-lg text-sm">
+     </div>
+     <div class="grid grid-cols-2 gap-2">
+      <div><label class="block text-gray-700 font-semibold mb-1.5 text-xs">تعداد کارتن</label> <input type="number" id="cartonQty" min="0" class="input-focus w-full px-3 py-2.5 border-2 border-gray-300 rounded-lg text-sm">
+      </div>
+      <div><label class="block text-gray-700 font-semibold mb-1.5 text-xs">تعداد عدد</label> <input type="number" id="unitQty" min="0" class="input-focus w-full px-3 py-2.5 border-2 border-gray-300 rounded-lg text-sm">
+      </div>
+     </div>
+     <div><label class="block text-gray-700 font-semibold mb-1.5 text-xs">یادداشت</label> <textarea id="orderNotes" rows="2" class="input-focus w-full px-3 py-2.5 border-2 border-gray-300 rounded-lg text-sm"></textarea>
+     </div>
+     <div class="flex gap-2 pt-4"><button type="submit" class="flex-1 gradient-bg text-white px-4 py-3 rounded-lg font-bold shadow-lg text-sm">💾 ذخیره</button> <button type="button" id="cancelOrderBtn" class="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg font-bold text-sm">✖️</button>
+     </div>
+    </form>
+   </div>
+  </div><!-- Sales Modal -->
+  <div id="salesModal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-end z-50" style="display: none;">
+   <div class="bg-white w-full h-full overflow-y-auto fade-in">
+    <div class="gradient-bg text-white p-4 sticky top-0 z-10 flex items-center justify-between">
+     <h2 id="salesModalTitle" class="text-base font-bold">➕ ثبت آمار فروش</h2><button id="closeSalesModal" class="text-xl">✖️</button>
+    </div>
+    <form id="salesForm" class="p-4 space-y-3">
+     <div><label class="block text-gray-700 font-semibold mb-1.5 text-xs">هفته *</label> <input type="week" id="salesWeek" required class="input-focus w-full px-3 py-2.5 border-2 border-gray-300 rounded-lg text-sm">
+     </div>
+     <div><label class="block text-gray-700 font-semibold mb-1.5 text-xs">تعداد فروش *</label> <input type="number" id="salesAmount" required min="0" class="input-focus w-full px-3 py-2.5 border-2 border-gray-300 rounded-lg text-sm">
+     </div>
+     <div><label class="block text-gray-700 font-semibold mb-1.5 text-xs">یادداشت</label> <textarea id="salesNotes" rows="2" class="input-focus w-full px-3 py-2.5 border-2 border-gray-300 rounded-lg text-sm"></textarea>
+     </div>
+     <div class="flex gap-2 pt-4"><button type="submit" class="flex-1 gradient-bg text-white px-4 py-3 rounded-lg font-bold shadow-lg text-sm">💾 ذخیره</button> <button type="button" id="cancelSalesBtn" class="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg font-bold text-sm">✖️</button>
+     </div>
+    </form>
+   </div>
+  </div>
+  <script>
+    const STORAGE_KEYS = {
+      DOCTORS: 'pharma_doctors',
+      VISITS: 'pharma_visits',
+      PHARMACIES: 'pharma_pharmacies',
+      ORDERS: 'pharma_orders',
+      SALES: 'pharma_sales'
+    };
+
+    let doctors = [];
+    let visits = [];
+    let pharmacies = [];
+    let orders = [];
+    let sales = [];
+    let currentSection = 'doctors';
+    let editingId = null;
+    let salesChart = null;
+
+    function loadData() {
+      try {
+        doctors = JSON.parse(localStorage.getItem(STORAGE_KEYS.DOCTORS)) || [];
+        visits = JSON.parse(localStorage.getItem(STORAGE_KEYS.VISITS)) || [];
+        pharmacies = JSON.parse(localStorage.getItem(STORAGE_KEYS.PHARMACIES)) || [];
+        orders = JSON.parse(localStorage.getItem(STORAGE_KEYS.ORDERS)) || [];
+        sales = JSON.parse(localStorage.getItem(STORAGE_KEYS.SALES)) || [];
+        
+        renderAll();
+        updateStats();
+        renderSalesChart();
+      } catch (error) {
+        console.error('Error loading data:', error);
+      }
+    }
+
+    function saveData(key, data) {
+      try {
+        localStorage.setItem(key, JSON.stringify(data));
+      } catch (error) {
+        showToast('❌ خطا در ذخیره', 'error');
+      }
+    }
+
+    function renderAll() {
+      renderDoctors();
+      renderVisits();
+      renderPharmacies();
+      renderOrders();
+      renderSales();
+      populateSelects();
+    }
+
+    function updateStats() {
+      document.getElementById('totalDoctors').textContent = doctors.length;
+      document.getElementById('totalPharmacies').textContent = pharmacies.length;
+      document.getElementById('totalVisits').textContent = visits.length;
+      document.getElementById('totalOrders').textContent = orders.length;
+    }
+
+    function formatDate(dateString) {
+      if (!dateString) return '';
+      const date = new Date(dateString);
+      return date.toLocaleDateString('fa-IR');
+    }
+
+    function formatNumber(num) {
+      return new Intl.NumberFormat('fa-IR').format(num);
+    }
+
+    // Section Switching
+    document.querySelectorAll('.section-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        const section = tab.dataset.section;
+        currentSection = section;
+        
+        document.querySelectorAll('.section-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        
+        ['doctors', 'visits', 'pharmacies', 'orders', 'sales', 'reports'].forEach(s => {
+          document.getElementById(s + 'Section').classList.add('hidden');
+        });
+        document.getElementById(section + 'Section').classList.remove('hidden');
+      });
+    });
+
+    // Floating Button
+    document.getElementById('floatingBtn').addEventListener('click', () => {
+      editingId = null;
+      if (currentSection === 'doctors') {
+        document.getElementById('doctorModal').style.display = 'flex';
+      } else if (currentSection === 'visits') {
+        if (doctors.length === 0) {
+          showToast('❌ ابتدا پزشک ثبت کنید', 'error');
+          return;
+        }
+        document.getElementById('visitModal').style.display = 'flex';
+      } else if (currentSection === 'pharmacies') {
+        document.getElementById('pharmacyModal').style.display = 'flex';
+      } else if (currentSection === 'orders') {
+        if (pharmacies.length === 0) {
+          showToast('❌ ابتدا داروخانه ثبت کنید', 'error');
+          return;
+        }
+        document.getElementById('orderModal').style.display = 'flex';
+      }
+    });
+
+    // Render Doctors
+    function renderDoctors() {
+      const container = document.getElementById('doctorsList');
+      const empty = document.getElementById('emptyDoctorsState');
+      const searchTerm = document.getElementById('searchDoctorInput').value.toLowerCase();
+      
+      let filtered = doctors.filter(d => 
+        d.name.toLowerCase().includes(searchTerm) ||
+        d.specialty.toLowerCase().includes(searchTerm)
+      );
+
+      if (filtered.length === 0) {
+        container.innerHTML = '';
+        empty.classList.remove('hidden');
+        return;
+      }
+      
+      empty.classList.add('hidden');
+      container.innerHTML = filtered.map(d => `
+        <div class="bg-white rounded-lg shadow p-3 border-r-4 border-blue-500">
+          <div class="flex justify-between mb-2">
+            <div>
+              <h3 class="text-sm font-bold">👨‍⚕️ ${d.name}</h3>
+              <p class="text-xs text-indigo-600">🩺 ${d.specialty}</p>
+              <p class="text-xs text-green-600">📍 ${d.area}</p>
+            </div>
+          </div>
+          <div class="bg-gray-50 rounded p-2 mb-2 text-xs">
+            <p>📞 ${d.phone}</p>
+            ${d.address ? `<p>🏢 ${d.address}</p>` : ''}
+          </div>
+          <div class="flex gap-2">
+            <button onclick="editDoctor('${d.id}')" class="flex-1 bg-blue-500 text-white px-3 py-2 rounded text-xs font-bold">✏️ ویرایش</button>
+            <button onclick="deleteDoctor('${d.id}')" class="flex-1 bg-red-500 text-white px-3 py-2 rounded text-xs font-bold">🗑️ حذف</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Render Visits
+    function renderVisits() {
+      const container = document.getElementById('visitsList');
+      const empty = document.getElementById('emptyVisitsState');
+      const searchTerm = document.getElementById('searchVisitInput').value.toLowerCase();
+      
+      let filtered = visits.filter(v => 
+        v.doctorName.toLowerCase().includes(searchTerm)
+      );
+
+      if (filtered.length === 0) {
+        container.innerHTML = '';
+        empty.classList.remove('hidden');
+        return;
+      }
+      
+      empty.classList.add('hidden');
+      
+      const getBadge = (result) => {
+        const badges = {
+          prescribed: '<span class="badge badge-prescribed">💊 سفارش</span>',
+          rejected: '<span class="badge badge-rejected">❌ رد</span>',
+          followup: '<span class="badge badge-followup">🔄 مجدد</span>'
+        };
+        return badges[result] || '';
+      };
+      
+      container.innerHTML = filtered.map(v => `
+        <div class="bg-white rounded-lg shadow p-3 border-r-4 ${v.result === 'prescribed' ? 'border-green-500' : v.result === 'rejected' ? 'border-red-500' : 'border-orange-500'}">
+          <div class="flex justify-between mb-2">
+            <div>
+              <div class="flex items-center gap-1 mb-1">
+                <h3 class="text-sm font-bold">👨‍⚕️ ${v.doctorName}</h3>
+                ${getBadge(v.result)}
+              </div>
+              <p class="text-xs text-gray-600">📅 ${formatDate(v.date)} - ${v.time}</p>
+            </div>
+          </div>
+          ${v.notes ? `<div class="bg-gray-50 rounded p-2 mb-2 text-xs"><p>📝 ${v.notes}</p></div>` : ''}
+          <div class="flex gap-2">
+            <button onclick="editVisit('${v.id}')" class="flex-1 bg-blue-500 text-white px-3 py-2 rounded text-xs font-bold">✏️ ویرایش</button>
+            <button onclick="deleteVisit('${v.id}')" class="flex-1 bg-red-500 text-white px-3 py-2 rounded text-xs font-bold">🗑️ حذف</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Render Pharmacies
+    function renderPharmacies() {
+      const container = document.getElementById('pharmaciesList');
+      const empty = document.getElementById('emptyPharmaciesState');
+      const searchTerm = document.getElementById('searchPharmacyInput').value.toLowerCase();
+      
+      let filtered = pharmacies.filter(p => 
+        p.name.toLowerCase().includes(searchTerm) ||
+        p.pharmacist.toLowerCase().includes(searchTerm)
+      );
+
+      if (filtered.length === 0) {
+        container.innerHTML = '';
+        empty.classList.remove('hidden');
+        return;
+      }
+      
+      empty.classList.add('hidden');
+      container.innerHTML = filtered.map(p => `
+        <div class="bg-white rounded-lg shadow p-3 border-r-4 border-green-500">
+          <div class="flex justify-between mb-2">
+            <div>
+              <h3 class="text-sm font-bold">🏥 ${p.name}</h3>
+              <p class="text-xs text-purple-600">💊 ${p.pharmacist}</p>
+            </div>
+          </div>
+          <div class="bg-gray-50 rounded p-2 mb-2 text-xs">
+            <p>📞 ${p.phone}</p>
+            <p>📍 ${p.address}</p>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="editPharmacy('${p.id}')" class="flex-1 bg-blue-500 text-white px-3 py-2 rounded text-xs font-bold">✏️ ویرایش</button>
+            <button onclick="deletePharmacy('${p.id}')" class="flex-1 bg-red-500 text-white px-3 py-2 rounded text-xs font-bold">🗑️ حذف</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Render Orders
+    function renderOrders() {
+      const container = document.getElementById('ordersList');
+      const empty = document.getElementById('emptyOrdersState');
+      const searchTerm = document.getElementById('searchOrderInput').value.toLowerCase();
+      
+      let filtered = orders.filter(o => 
+        o.pharmacyName.toLowerCase().includes(searchTerm) ||
+        o.drug.toLowerCase().includes(searchTerm)
+      );
+
+      if (filtered.length === 0) {
+        container.innerHTML = '';
+        empty.classList.remove('hidden');
+        return;
+      }
+      
+      empty.classList.add('hidden');
+      container.innerHTML = filtered.map(o => `
+        <div class="bg-white rounded-lg shadow p-3 border-r-4 border-purple-500">
+          <div class="flex justify-between mb-2">
+            <div>
+              <h3 class="text-sm font-bold">🏥 ${o.pharmacyName}</h3>
+              <p class="text-xs text-blue-600">💊 ${o.drug}</p>
+              <p class="text-xs text-gray-600">📅 ${formatDate(o.date)}</p>
+            </div>
+          </div>
+          <div class="bg-gray-50 rounded p-2 mb-2 text-xs">
+            ${o.cartons > 0 ? `<p>📦 کارتن: ${formatNumber(o.cartons)}</p>` : ''}
+            ${o.units > 0 ? `<p>🔢 عدد: ${formatNumber(o.units)}</p>` : ''}
+            ${o.notes ? `<p>📝 ${o.notes}</p>` : ''}
+          </div>
+          <div class="flex gap-2">
+            <button onclick="editOrder('${o.id}')" class="flex-1 bg-blue-500 text-white px-3 py-2 rounded text-xs font-bold">✏️ ویرایش</button>
+            <button onclick="deleteOrder('${o.id}')" class="flex-1 bg-red-500 text-white px-3 py-2 rounded text-xs font-bold">🗑️ حذف</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Render Sales
+    function renderSales() {
+      const container = document.getElementById('salesList');
+      const empty = document.getElementById('emptySalesState');
+      
+      if (sales.length === 0) {
+        container.innerHTML = '';
+        empty.classList.remove('hidden');
+        return;
+      }
+      
+      empty.classList.add('hidden');
+      const sorted = [...sales].sort((a, b) => new Date(b.week) - new Date(a.week));
+      
+      container.innerHTML = sorted.map(s => `
+        <div class="bg-white rounded-lg shadow p-3 border-r-4 border-indigo-500">
+          <div class="flex justify-between mb-2">
+            <div>
+              <h3 class="text-sm font-bold">📊 هفته ${s.week}</h3>
+              <p class="text-base text-green-600 font-bold">${formatNumber(s.amount)} عدد فروش</p>
+            </div>
+          </div>
+          ${s.notes ? `<div class="bg-gray-50 rounded p-2 mb-2 text-xs"><p>📝 ${s.notes}</p></div>` : ''}
+          <div class="flex gap-2">
+            <button onclick="editSales('${s.id}')" class="flex-1 bg-blue-500 text-white px-3 py-2 rounded text-xs font-bold">✏️ ویرایش</button>
+            <button onclick="deleteSales('${s.id}')" class="flex-1 bg-red-500 text-white px-3 py-2 rounded text-xs font-bold">🗑️ حذف</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Sales Chart
+    function renderSalesChart() {
+      const ctx = document.getElementById('salesChart');
+      if (!ctx) return;
+      
+      if (salesChart) {
+        salesChart.destroy();
+      }
+      
+      const sorted = [...sales].sort((a, b) => new Date(a.week) - new Date(b.week));
+      const labels = sorted.map(s => s.week);
+      const data = sorted.map(s => s.amount);
+      
+      salesChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'تعداد فروش',
+            data: data,
+            borderColor: '#667eea',
+            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+            tension: 0.4,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: {
+              display: false
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function(value) {
+                  return formatNumber(value);
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Populate Selects
+    function populateSelects() {
+      const doctorSelect = document.getElementById('doctorSelect');
+      doctorSelect.innerHTML = '<option value="">انتخاب کنید...</option>' +
+        doctors.map(d => `<option value="${d.id}">${d.name} - ${d.specialty}</option>`).join('');
+      
+      const pharmacySelect = document.getElementById('pharmacySelect');
+      pharmacySelect.innerHTML = '<option value="">انتخاب کنید...</option>' +
+        pharmacies.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+    }
+
+    // Modal Handlers
+    document.getElementById('closeDoctorModal').addEventListener('click', () => {
+      document.getElementById('doctorModal').style.display = 'none';
+      document.getElementById('doctorForm').reset();
+    });
+
+    document.getElementById('closeVisitModal').addEventListener('click', () => {
+      document.getElementById('visitModal').style.display = 'none';
+      document.getElementById('visitForm').reset();
+    });
+
+    document.getElementById('closePharmacyModal').addEventListener('click', () => {
+      document.getElementById('pharmacyModal').style.display = 'none';
+      document.getElementById('pharmacyForm').reset();
+    });
+
+    document.getElementById('closeOrderModal').addEventListener('click', () => {
+      document.getElementById('orderModal').style.display = 'none';
+      document.getElementById('orderForm').reset();
+    });
+
+    document.getElementById('closeSalesModal').addEventListener('click', () => {
+      document.getElementById('salesModal').style.display = 'none';
+      document.getElementById('salesForm').reset();
+    });
+
+    document.getElementById('cancelDoctorBtn').addEventListener('click', () => {
+      document.getElementById('doctorModal').style.display = 'none';
+    });
+
+    document.getElementById('cancelVisitBtn').addEventListener('click', () => {
+      document.getElementById('visitModal').style.display = 'none';
+    });
+
+    document.getElementById('cancelPharmacyBtn').addEventListener('click', () => {
+      document.getElementById('pharmacyModal').style.display = 'none';
+    });
+
+    document.getElementById('cancelOrderBtn').addEventListener('click', () => {
+      document.getElementById('orderModal').style.display = 'none';
+    });
+
+    document.getElementById('cancelSalesBtn').addEventListener('click', () => {
+      document.getElementById('salesModal').style.display = 'none';
+    });
+
+    // Form Submissions
+    document.getElementById('doctorForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      
+      const data = {
+        id: editingId || `doctor_${Date.now()}`,
+        name: document.getElementById('doctorNameInput').value.trim(),
+        specialty: document.getElementById('specialtyInput').value.trim(),
+        phone: document.getElementById('phoneInput').value.trim(),
+        area: document.getElementById('areaInput').value.trim(),
+        address: document.getElementById('addressInput').value.trim(),
+        createdAt: new Date().toISOString()
+      };
+      
+      if (editingId) {
+        const index = doctors.findIndex(d => d.id === editingId);
+        if (index !== -1) doctors[index] = data;
+      } else {
+        doctors.push(data);
+      }
+      
+      saveData(STORAGE_KEYS.DOCTORS, doctors);
+      renderAll();
+      updateStats();
+      document.getElementById('doctorModal').style.display = 'none';
+      document.getElementById('doctorForm').reset();
+      showToast('✅ ذخیره شد', 'success');
+    });
+
+    document.getElementById('visitForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      
+      const doctorId = document.getElementById('doctorSelect').value;
+      const doctor = doctors.find(d => d.id === doctorId);
+      
+      const data = {
+        id: editingId || `visit_${Date.now()}`,
+        doctorId: doctorId,
+        doctorName: doctor.name,
+        date: document.getElementById('visitDate').value,
+        time: document.getElementById('visitTime').value,
+        result: document.getElementById('visitResult').value,
+        notes: document.getElementById('visitNotes').value.trim(),
+        createdAt: new Date().toISOString()
+      };
+      
+      if (editingId) {
+        const index = visits.findIndex(v => v.id === editingId);
+        if (index !== -1) visits[index] = data;
+      } else {
+        visits.push(data);
+      }
+      
+      saveData(STORAGE_KEYS.VISITS, visits);
+      renderAll();
+      updateStats();
+      document.getElementById('visitModal').style.display = 'none';
+      document.getElementById('visitForm').reset();
+      showToast('✅ ذخیره شد', 'success');
+    });
+
+    document.getElementById('pharmacyForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      
+      const data = {
+        id: editingId || `pharmacy_${Date.now()}`,
+        name: document.getElementById('pharmacyNameInput').value.trim(),
+        pharmacist: document.getElementById('pharmacistNameInput').value.trim(),
+        phone: document.getElementById('pharmacyPhoneInput').value.trim(),
+        address: document.getElementById('pharmacyAddressInput').value.trim(),
+        createdAt: new Date().toISOString()
+      };
+      
+      if (editingId) {
+        const index = pharmacies.findIndex(p => p.id === editingId);
+        if (index !== -1) pharmacies[index] = data;
+      } else {
+        pharmacies.push(data);
+      }
+      
+      saveData(STORAGE_KEYS.PHARMACIES, pharmacies);
+      renderAll();
+      updateStats();
+      document.getElementById('pharmacyModal').style.display = 'none';
+      document.getElementById('pharmacyForm').reset();
+      showToast('✅ ذخیره شد', 'success');
+    });
+
+    document.getElementById('orderForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      
+      const pharmacyId = document.getElementById('pharmacySelect').value;
+      const pharmacy = pharmacies.find(p => p.id === pharmacyId);
+      
+      const data = {
+        id: editingId || `order_${Date.now()}`,
+        pharmacyId: pharmacyId,
+        pharmacyName: pharmacy.name,
+        date: document.getElementById('orderDate').value,
+        drug: document.getElementById('drugName').value.trim(),
+        cartons: parseInt(document.getElementById('cartonQty').value) || 0,
+        units: parseInt(document.getElementById('unitQty').value) || 0,
+        notes: document.getElementById('orderNotes').value.trim(),
+        createdAt: new Date().toISOString()
+      };
+      
+      if (editingId) {
+        const index = orders.findIndex(o => o.id === editingId);
+        if (index !== -1) orders[index] = data;
+      } else {
+        orders.push(data);
+      }
+      
+      saveData(STORAGE_KEYS.ORDERS, orders);
+      renderAll();
+      updateStats();
+      document.getElementById('orderModal').style.display = 'none';
+      document.getElementById('orderForm').reset();
+      showToast('✅ ذخیره شد', 'success');
+    });
+
+    document.getElementById('addSalesBtn').addEventListener('click', () => {
+      editingId = null;
+      document.getElementById('salesModal').style.display = 'flex';
+    });
+
+    document.getElementById('salesForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      
+      const data = {
+        id: editingId || `sales_${Date.now()}`,
+        week: document.getElementById('salesWeek').value,
+        amount: parseFloat(document.getElementById('salesAmount').value),
+        notes: document.getElementById('salesNotes').value.trim(),
+        createdAt: new Date().toISOString()
+      };
+      
+      if (editingId) {
+        const index = sales.findIndex(s => s.id === editingId);
+        if (index !== -1) sales[index] = data;
+      } else {
+        sales.push(data);
+      }
+      
+      saveData(STORAGE_KEYS.SALES, sales);
+      renderAll();
+      renderSalesChart();
+      document.getElementById('salesModal').style.display = 'none';
+      document.getElementById('salesForm').reset();
+      showToast('✅ ذخیره شد', 'success');
+    });
+
+    // Edit Functions
+    window.editDoctor = function(id) {
+      const item = doctors.find(d => d.id === id);
+      if (!item) return;
+      
+      editingId = id;
+      document.getElementById('doctorNameInput').value = item.name;
+      document.getElementById('specialtyInput').value = item.specialty;
+      document.getElementById('phoneInput').value = item.phone;
+      document.getElementById('areaInput').value = item.area;
+      document.getElementById('addressInput').value = item.address || '';
+      document.getElementById('doctorModal').style.display = 'flex';
+    };
+
+    window.editVisit = function(id) {
+      const item = visits.find(v => v.id === id);
+      if (!item) return;
+      
+      editingId = id;
+      document.getElementById('doctorSelect').value = item.doctorId;
+      document.getElementById('visitDate').value = item.date;
+      document.getElementById('visitTime').value = item.time;
+      document.getElementById('visitResult').value = item.result;
+      document.getElementById('visitNotes').value = item.notes || '';
+      document.getElementById('visitModal').style.display = 'flex';
+    };
+
+    window.editPharmacy = function(id) {
+      const item = pharmacies.find(p => p.id === id);
+      if (!item) return;
+      
+      editingId = id;
+      document.getElementById('pharmacyNameInput').value = item.name;
+      document.getElementById('pharmacistNameInput').value = item.pharmacist;
+      document.getElementById('pharmacyPhoneInput').value = item.phone;
+      document.getElementById('pharmacyAddressInput').value = item.address;
+      document.getElementById('pharmacyModal').style.display = 'flex';
+    };
+
+    window.editOrder = function(id) {
+      const item = orders.find(o => o.id === id);
+      if (!item) return;
+      
+      editingId = id;
+      document.getElementById('pharmacySelect').value = item.pharmacyId;
+      document.getElementById('orderDate').value = item.date;
+      document.getElementById('drugName').value = item.drug;
+      document.getElementById('cartonQty').value = item.cartons;
+      document.getElementById('unitQty').value = item.units;
+      document.getElementById('orderNotes').value = item.notes || '';
+      document.getElementById('orderModal').style.display = 'flex';
+    };
+
+    window.editSales = function(id) {
+      const item = sales.find(s => s.id === id);
+      if (!item) return;
+      
+      editingId = id;
+      document.getElementById('salesWeek').value = item.week;
+      document.getElementById('salesAmount').value = item.amount;
+      document.getElementById('salesNotes').value = item.notes || '';
+      document.getElementById('salesModal').style.display = 'flex';
+    };
+
+    // Delete Functions
+    window.deleteDoctor = function(id) {
+      if (confirm('حذف شود؟')) {
+        doctors = doctors.filter(d => d.id !== id);
+        saveData(STORAGE_KEYS.DOCTORS, doctors);
+        renderAll();
+        updateStats();
+        showToast('✅ حذف شد', 'success');
+      }
+    };
+
+    window.deleteVisit = function(id) {
+      if (confirm('حذف شود؟')) {
+        visits = visits.filter(v => v.id !== id);
+        saveData(STORAGE_KEYS.VISITS, visits);
+        renderAll();
+        updateStats();
+        showToast('✅ حذف شد', 'success');
+      }
+    };
+
+    window.deletePharmacy = function(id) {
+      if (confirm('حذف شود؟')) {
+        pharmacies = pharmacies.filter(p => p.id !== id);
+        saveData(STORAGE_KEYS.PHARMACIES, pharmacies);
+        renderAll();
+        updateStats();
+        showToast('✅ حذف شد', 'success');
+      }
+    };
+
+    window.deleteOrder = function(id) {
+      if (confirm('حذف شود؟')) {
+        orders = orders.filter(o => o.id !== id);
+        saveData(STORAGE_KEYS.ORDERS, orders);
+        renderAll();
+        updateStats();
+        showToast('✅ حذف شد', 'success');
+      }
+    };
+
+    window.deleteSales = function(id) {
+      if (confirm('حذف شود؟')) {
+        sales = sales.filter(s => s.id !== id);
+        saveData(STORAGE_KEYS.SALES, sales);
+        renderAll();
+        renderSalesChart();
+        showToast('✅ حذف شد', 'success');
+      }
+    };
+
+    // PDF Generation
+    document.getElementById('generatePDFBtn').addEventListener('click', async () => {
+      const type = document.getElementById('reportType').value;
+      const period = document.getElementById('reportPeriod').value;
+      const fromDate = document.getElementById('reportFromDate').value;
+      const toDate = document.getElementById('reportToDate').value;
+      
+      showToast('��� در حال تولید PDF...', 'success');
+      
+      setTimeout(() => {
+        const reportContent = generateReportHTML(type, fromDate, toDate);
+        const printWindow = window.open('', '', 'width=800,height=600');
+        printWindow.document.write(reportContent);
+        printWindow.document.close();
+        printWindow.print();
+        showToast('✅ گزارش آماده است', 'success');
+      }, 500);
+    });
+
+    function generateReportHTML(type, fromDate, toDate) {
+      let content = `
+        <!DOCTYPE html>
+        <html dir="rtl">
+        <head>
+          <meta charset="UTF-8">
+          <title>گزارش ${type === 'doctors' ? 'پزشکان' : type === 'pharmacies' ? 'داروخانه‌ها' : 'کامل'}</title>
+          <style>
+            body { font-family: 'Tahoma', sans-serif; padding: 20px; }
+            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: right; }
+            th { background: #667eea; color: white; }
+            h1 { text-align: center; color: #667eea; }
+            .header { text-align: center; margin-bottom: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>گزارش ${type === 'doctors' ? 'پزشکان' : type === 'pharmacies' ? 'داروخانه‌ها' : 'کامل'}</h1>
+            <p>از تاریخ: ${fromDate || 'نامحدود'} تا ${toDate || 'نامحدود'}</p>
+            <p>تاریخ تولید: ${new Date().toLocaleDateString('fa-IR')}</p>
+          </div>
+      `;
+      
+      if (type === 'doctors' || type === 'both') {
+        let filtered = doctors;
+        if (fromDate) filtered = filtered.filter(d => d.createdAt >= fromDate);
+        if (toDate) filtered = filtered.filter(d => d.createdAt <= toDate);
+        
+        content += `
+          <h2>پزشکان (${filtered.length} نفر)</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>ردیف</th>
+                <th>نام</th>
+                <th>تخصص</th>
+                <th>تماس</th>
+                <th>منطقه</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filtered.map((d, i) => `
+                <tr>
+                  <td>${i + 1}</td>
+                  <td>${d.name}</td>
+                  <td>${d.specialty}</td>
+                  <td>${d.phone}</td>
+                  <td>${d.area}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      }
+      
+      if (type === 'pharmacies' || type === 'both') {
+        let filtered = pharmacies;
+        if (fromDate) filtered = filtered.filter(p => p.createdAt >= fromDate);
+        if (toDate) filtered = filtered.filter(p => p.createdAt <= toDate);
+        
+        content += `
+          <h2>داروخانه‌ها (${filtered.length} مورد)</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>ردیف</th>
+                <th>نام داروخانه</th>
+                <th>داروساز</th>
+                <th>تماس</th>
+                <th>آدرس</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filtered.map((p, i) => `
+                <tr>
+                  <td>${i + 1}</td>
+                  <td>${p.name}</td>
+                  <td>${p.pharmacist}</td>
+                  <td>${p.phone}</td>
+                  <td>${p.address}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      }
+      
+      content += `
+        </body>
+        </html>
+      `;
+      
+      return content;
+    }
+
+    // Search Handlers
+    document.getElementById('searchDoctorInput').addEventListener('input', renderDoctors);
+    document.getElementById('searchVisitInput').addEventListener('input', renderVisits);
+    document.getElementById('searchPharmacyInput').addEventListener('input', renderPharmacies);
+    document.getElementById('searchOrderInput').addEventListener('input', renderOrders);
+
+    // Toast
+    function showToast(message, type = 'success') {
+      const toast = document.createElement('div');
+      const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
+      toast.className = `fixed top-4 left-1/2 transform -translate-x-1/2 ${bgColor} text-white px-6 py-3 rounded-lg shadow-2xl z-50 fade-in font-bold text-sm`;
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => document.body.removeChild(toast), 300);
+      }, 2500);
+    }
+
+    // Initialize
+    loadData();
+    
+    // Set default dates
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('visitDate').value = today;
+    document.getElementById('orderDate').value = today;
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9a2b97f0a6c22d36',t:'MTc2Mzg0NzcxMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
